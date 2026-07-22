@@ -2,6 +2,7 @@ using DataAccessor.Data;
 using DataAccessor.Models;
 using DataAccessor.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<MeetingFlowDbContext>(o => o.UseNpgsql(conn));
 builder.Services.AddScoped<MeetingsRepository>();
 builder.Services.AddScoped<RegistrationsRepository>();
 builder.Services.AddScoped<FeedbackRepository>();
+builder.Services.AddScoped<MeetingTasksRepository>();
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
@@ -26,7 +28,13 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<MeetingFlowDbContext>();
     for (var i = 0; i < 20; i++)
     {
-        try { db.Database.EnsureCreated(); break; }
+        try
+        {
+            db.Database.EnsureCreated();
+            var creator = db.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+            try { creator.CreateTables(); } catch { /* Tables may already exist */ }
+            break;
+        }
         catch { Thread.Sleep(1500); }
     }
     SeedData.Initialize(db);
@@ -74,5 +82,21 @@ app.MapPost("/data/feedback", async (Feedback body, FeedbackRepository r) =>
     var saved = await r.CreateAsync(body);
     return Results.Created($"/data/feedback/{saved.Id}", saved);
 });
+
+// --- Meeting Tasks (action items) ---
+app.MapGet("/data/tasks", async (MeetingTasksRepository r) => Results.Ok(await r.GetAllAsync()));
+app.MapGet("/data/tasks/by-meeting/{meetingId:guid}", async (Guid meetingId, MeetingTasksRepository r) =>
+    Results.Ok(await r.GetByMeetingAsync(meetingId)));
+app.MapGet("/data/tasks/{id:guid}", async (Guid id, MeetingTasksRepository r) =>
+    await r.GetByIdAsync(id) is { } t ? Results.Ok(t) : Results.NotFound());
+app.MapPost("/data/tasks", async (MeetingTask body, MeetingTasksRepository r) =>
+{
+    var saved = await r.CreateAsync(body);
+    return Results.Created($"/data/tasks/{saved.Id}", saved);
+});
+app.MapPut("/data/tasks/{id:guid}", async (Guid id, MeetingTask body, MeetingTasksRepository r) =>
+    await r.UpdateAsync(id, body) is { } t ? Results.Ok(t) : Results.NotFound());
+app.MapDelete("/data/tasks/{id:guid}", async (Guid id, MeetingTasksRepository r) =>
+    await r.DeleteAsync(id) ? Results.NoContent() : Results.NotFound());
 
 app.Run();

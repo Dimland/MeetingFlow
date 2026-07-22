@@ -1,4 +1,5 @@
 using RegistrationsManager.Clients;
+using RegistrationsManager.Messaging;
 using RegistrationsManager.Models;
 using RegistrationsManager.Pricing;
 
@@ -13,10 +14,14 @@ var schedulingEngineUrl = builder.Configuration["SCHEDULING_ENGINE_URL"]
 var notificationsAccessorUrl = builder.Configuration["NOTIFICATIONS_ACCESSOR_URL"]
     ?? Environment.GetEnvironmentVariable("NOTIFICATIONS_ACCESSOR_URL")
     ?? "http://localhost:5011";
+var rabbitUrl = builder.Configuration["RABBITMQ_URL"]
+    ?? Environment.GetEnvironmentVariable("RABBITMQ_URL")
+    ?? "amqp://guest:guest@localhost:5672";
 
 builder.Services.AddHttpClient<DataAccessorClient>(c => c.BaseAddress = new Uri(dataAccessorUrl));
 builder.Services.AddHttpClient<SchedulingEngineClient>(c => c.BaseAddress = new Uri(schedulingEngineUrl));
 builder.Services.AddHttpClient<NotificationsAccessorClient>(c => c.BaseAddress = new Uri(notificationsAccessorUrl));
+builder.Services.AddSingleton(sp => EventPublisher.CreateAsync(rabbitUrl).GetAwaiter().GetResult());
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
@@ -36,7 +41,8 @@ app.MapPost("/registrations", async (
     Registration body,
     DataAccessorClient data,
     SchedulingEngineClient scheduling,
-    NotificationsAccessorClient notifications) =>
+    NotificationsAccessorClient notifications,
+    EventPublisher eventPublisher) =>
 {
     var meeting = await data.GetMeetingAsync(body.MeetingId);
     if (meeting is null) return Results.NotFound(new { error = "Meeting not found" });
@@ -56,6 +62,12 @@ app.MapPost("/registrations", async (
 
     var saved = await data.CreateRegistrationAsync(body);
 
+    // Publish event to RabbitMQ — NotificationsAccessor subscribes to this.
+    await eventPublisher.PublishAsync("registration.created", new RegistrationCreatedEvent(
+        saved!.Id, meeting.Id, attendee.Id,
+        meeting.Title, attendee.Email, body.RegisteredAt));
+
+    // Also still call notifications directly (existing behavior kept for now).
     await notifications.SendRegistrationConfirmationAsync(attendee, meeting);
 
     return Results.Created($"/registrations/{saved!.Id}", new

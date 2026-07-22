@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using NotificationsAccessor.Data;
 using NotificationsAccessor.Infrastructure;
+using NotificationsAccessor.Messaging;
 using NotificationsAccessor.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +13,7 @@ var conn = builder.Configuration["POSTGRES_CONN"]
 
 builder.Services.AddDbContext<NotificationsDbContext>(o => o.UseNpgsql(conn));
 builder.Services.AddSingleton<FakeSmtpGateway>();
+builder.Services.AddHostedService<RegistrationEventConsumer>();
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
@@ -24,7 +27,15 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
     for (var i = 0; i < 20; i++)
     {
-        try { db.Database.EnsureCreated(); break; }
+        try
+        {
+            // EnsureCreated() won't create tables if OTHER tables already exist in the DB.
+            // Use GetService to explicitly create this context's tables.
+            db.Database.EnsureCreated();
+            var creator = db.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+            try { creator.CreateTables(); } catch { /* Tables may already exist */ }
+            break;
+        }
         catch { Thread.Sleep(1500); }
     }
     SeedData.Initialize(db);

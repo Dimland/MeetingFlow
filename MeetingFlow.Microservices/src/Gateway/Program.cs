@@ -2,15 +2,17 @@ using Gateway.Clients;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var meetingsManagerUrl = builder.Configuration["MEETINGS_MANAGER_URL"]
-    ?? Environment.GetEnvironmentVariable("MEETINGS_MANAGER_URL")
-    ?? "http://localhost:5030";
-var registrationsManagerUrl = builder.Configuration["REGISTRATIONS_MANAGER_URL"]
-    ?? Environment.GetEnvironmentVariable("REGISTRATIONS_MANAGER_URL")
-    ?? "http://localhost:5031";
+// In Docker, env vars like ServiceUrls__MeetingsManager automatically override appsettings.json.
+var meetingsManagerUrl = builder.Configuration["ServiceUrls:MeetingsManager"] ?? "http://localhost:5030";
+var registrationsManagerUrl = builder.Configuration["ServiceUrls:RegistrationsManager"] ?? "http://localhost:5031";
+var aiChatEngineUrl = builder.Configuration["ServiceUrls:AiChatEngine"] ?? "http://localhost:5040";
 
 builder.Services.AddHttpClient<MeetingsManagerClient>(c => c.BaseAddress = new Uri(meetingsManagerUrl));
 builder.Services.AddHttpClient<RegistrationsManagerClient>(c => c.BaseAddress = new Uri(registrationsManagerUrl));
+builder.Services.AddHttpClient<AiChatEngineClient>(c => c.BaseAddress = new Uri(aiChatEngineUrl));
+
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+    p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
@@ -18,6 +20,8 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 });
 
 var app = builder.Build();
+
+app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "Gateway" }));
 
@@ -85,6 +89,17 @@ app.MapPost("/feedback", async (HttpRequest req, RegistrationsManagerClient clie
     var body = await reader.ReadToEndAsync();
     using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
     var resp = await client.CreateFeedbackRawAsync(content);
+    var responseBody = await resp.Content.ReadAsStringAsync();
+    return Results.Content(responseBody, "application/json", statusCode: (int)resp.StatusCode);
+});
+
+// --- AI Chat ---
+app.MapPost("/chat", async (HttpRequest req, AiChatEngineClient client) =>
+{
+    using var reader = new StreamReader(req.Body);
+    var body = await reader.ReadToEndAsync();
+    using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+    var resp = await client.ChatAsync(content);
     var responseBody = await resp.Content.ReadAsStringAsync();
     return Results.Content(responseBody, "application/json", statusCode: (int)resp.StatusCode);
 });

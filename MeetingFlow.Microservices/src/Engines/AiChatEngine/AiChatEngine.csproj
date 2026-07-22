@@ -3,10 +3,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>RegistrationsManager</RootNamespace>
-    <AssemblyName>RegistrationsManager</AssemblyName>
+    <RootNamespace>AiChatEngine</RootNamespace>
+    <AssemblyName>AiChatEngine</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
   </ItemGroup>
 </Project>
