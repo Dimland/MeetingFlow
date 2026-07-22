@@ -63,15 +63,15 @@ MeetingFlow.Microservices/
 
 ### IDesign Roles
 
-| Role               | Service                | Responsibility                                     |
-| ------------------- | ---------------------- | -------------------------------------------------- |
-| **Client**          | Gateway                | Public HTTP edge — routes to Managers               |
-| **Manager**         | MeetingsManager        | Meeting/session/speaker orchestration               |
-| **Manager**         | RegistrationsManager   | Registration + feedback orchestration, pricing      |
-| **Engine**          | SchedulingEngine       | Pure logic — conflict detection, capacity checks    |
-| **Engine**          | AiChatEngine           | AI chat with action execution                       |
-| **Resource Accessor** | DataAccessor         | EF Core CRUD over Postgres (meetings, registrations, feedback schemas) |
-| **Resource Accessor** | NotificationsAccessor | Notification persistence + fake email sending       |
+| Role                  | Service               | Responsibility                                                         |
+| --------------------- | --------------------- | ---------------------------------------------------------------------- |
+| **Client**            | Gateway               | Public HTTP edge — routes to Managers                                  |
+| **Manager**           | MeetingsManager       | Meeting/session/speaker orchestration                                  |
+| **Manager**           | RegistrationsManager  | Registration + feedback orchestration, pricing                         |
+| **Engine**            | SchedulingEngine      | Pure logic — conflict detection, capacity checks                       |
+| **Engine**            | AiChatEngine          | AI chat with action execution                                          |
+| **Resource Accessor** | DataAccessor          | EF Core CRUD over Postgres (meetings, registrations, feedback schemas) |
+| **Resource Accessor** | NotificationsAccessor | Notification persistence + fake email sending                          |
 
 ### Tech Stack
 
@@ -107,29 +107,29 @@ All inter-service communication is **synchronous HTTP** (via typed `HttpClient`s
 
 The shared Postgres instance has 4 schemas created by `infra/postgres/init.sql`:
 
-| Schema          | Owner Service          | Tables                                            |
-| --------------- | ---------------------- | ------------------------------------------------- |
-| `meetings`      | DataAccessor           | Meetings, Sessions, Speakers, Venues               |
-| `registrations` | DataAccessor           | Registrations, Attendees                           |
-| `feedback`      | DataAccessor           | Feedback                                           |
-| `notifications` | NotificationsAccessor  | Notifications                                      |
+| Schema          | Owner Service         | Tables                               |
+| --------------- | --------------------- | ------------------------------------ |
+| `meetings`      | DataAccessor          | Meetings, Sessions, Speakers, Venues |
+| `registrations` | DataAccessor          | Registrations, Attendees             |
+| `feedback`      | DataAccessor          | Feedback                             |
+| `notifications` | NotificationsAccessor | Notifications                        |
 
 Tables are created by EF Core `EnsureCreated()` at service startup. Seed data is loaded automatically.
 
 ## Public REST Endpoints (Gateway, port 8080)
 
-| Method | Path                                    | Description                                        |
-| ------ | --------------------------------------- | -------------------------------------------------- |
-| GET    | `/meetings`                             | List meetings (full entity graph)                  |
-| GET    | `/meetings/{id}`                        | Meeting details with sessions/registrations        |
-| PUT    | `/meetings/{id}`                        | Update meeting (accepts full entity)               |
-| GET    | `/admin/meetings`                       | Admin view — no auth, exposes internal fields      |
-| GET    | `/speakers`                             | List all speakers                                  |
-| GET    | `/speakers/{id}`                        | Speaker profile including email and phone          |
-| POST   | `/registrations`                        | Create registration (accepts full entity)          |
-| GET    | `/registrations/by-meeting/{meetingId}` | Registrations with full attendee data              |
-| POST   | `/feedback`                             | Submit feedback (accepts full entity)              |
-| POST   | `/chat`                                 | AI chat with action execution                      |
+| Method | Path                                    | Description                                   |
+| ------ | --------------------------------------- | --------------------------------------------- |
+| GET    | `/meetings`                             | List meetings (full entity graph)             |
+| GET    | `/meetings/{id}`                        | Meeting details with sessions/registrations   |
+| PUT    | `/meetings/{id}`                        | Update meeting (accepts full entity)          |
+| GET    | `/admin/meetings`                       | Admin view — no auth, exposes internal fields |
+| GET    | `/speakers`                             | List all speakers                             |
+| GET    | `/speakers/{id}`                        | Speaker profile including email and phone     |
+| POST   | `/registrations`                        | Create registration (accepts full entity)     |
+| GET    | `/registrations/by-meeting/{meetingId}` | Registrations with full attendee data         |
+| POST   | `/feedback`                             | Submit feedback (accepts full entity)         |
+| POST   | `/chat`                                 | AI chat with action execution                 |
 
 Individual services also expose their own ports for debugging: DataAccessor (`5010`), NotificationsAccessor (`5011`), SchedulingEngine (`5020`), MeetingsManager (`5030`), RegistrationsManager (`5031`), AiChatEngine (`5040`).
 

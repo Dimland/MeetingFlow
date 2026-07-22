@@ -41,16 +41,16 @@ This project intentionally returns EF Core entity models directly from API endpo
 
 ## REST Endpoints
 
-| Method | Path                   | Description                                      |
-| ------ | ---------------------- | ------------------------------------------------ |
-| GET    | `/api/meetings`        | List all meetings with Venue and Sessions         |
-| GET    | `/api/meetings/{id}`   | Meeting details with full entity graph            |
-| GET    | `/api/admin/meetings`  | Admin view — includes InternalNotes, AdminOnlyCode |
-| PUT    | `/api/meetings/{id}`   | Update meeting (accepts full entity body)         |
-| GET    | `/api/speakers/{id}`   | Speaker profile with sessions and meeting info    |
-| POST   | `/api/registrations`   | Create registration (accepts CreateRegistrationRequest record) |
-| GET    | `/api/dashboard`       | Dashboard analytics (returns anonymous object)    |
-| GET    | `/api/audit-log`       | Audit log entries                                 |
+| Method | Path                  | Description                                                    |
+| ------ | --------------------- | -------------------------------------------------------------- |
+| GET    | `/api/meetings`       | List all meetings with Venue and Sessions                      |
+| GET    | `/api/meetings/{id}`  | Meeting details with full entity graph                         |
+| GET    | `/api/admin/meetings` | Admin view — includes InternalNotes, AdminOnlyCode             |
+| PUT    | `/api/meetings/{id}`  | Update meeting (accepts full entity body)                      |
+| GET    | `/api/speakers/{id}`  | Speaker profile with sessions and meeting info                 |
+| POST   | `/api/registrations`  | Create registration (accepts CreateRegistrationRequest record) |
+| GET    | `/api/dashboard`      | Dashboard analytics (returns anonymous object)                 |
+| GET    | `/api/audit-log`      | Audit log entries                                              |
 
 ## GraphQL
 
