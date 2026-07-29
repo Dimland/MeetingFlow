@@ -119,8 +119,8 @@ The SQLite database (`meetingflow_monolith.db`) is created and seeded automatica
 The monolith starts without AI configuration, but the Kosher Checker will show an unavailable message until these environment variables are provided:
 
 ```bash
-AiChat__Model=gpt-4o-mini
-AiChat__Endpoint=https://models.inference.ai.azure.com
+AiChat__Model=openai/gpt-4.1
+AiChat__Endpoint=https://models.github.ai/inference
 AiChat__ApiKey=your-api-key
 ```
 

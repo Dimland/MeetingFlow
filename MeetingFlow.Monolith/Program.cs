@@ -23,8 +23,8 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
-var aiModel = builder.Configuration["AiChat:Model"] ?? "gpt-4o-mini";
-var aiEndpoint = builder.Configuration["AiChat:Endpoint"] ?? "https://models.inference.ai.azure.com";
+var aiModel = builder.Configuration["AiChat:Model"] ?? "openai/gpt-4.1";
+var aiEndpoint = builder.Configuration["AiChat:Endpoint"] ?? "https://models.github.ai/inference";
 var aiApiKey = builder.Configuration["AiChat:ApiKey"];
 
 if (!string.IsNullOrWhiteSpace(aiApiKey))

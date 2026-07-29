@@ -27,7 +27,8 @@
 
 ## Questions for review
 
-- The default endpoint mirrors the repository's existing AI engine. Confirm the intended
-  provider and model support native JSON-schema structured output in the target environment.
+- The original AI engine uses an older GitHub Models endpoint. The monolith uses the
+  current `https://models.github.ai/inference` endpoint and `openai/gpt-4.1` model,
+  whose inference API accepts a JSON-schema response format.
 - The lightweight abuse protection is process-local. A multi-instance deployment should
   use a shared gateway-level quota in addition to the per-instance controls.
