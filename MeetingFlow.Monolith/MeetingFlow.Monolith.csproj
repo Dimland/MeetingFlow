@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MeetingFlow.Monolith</RootNamespace>
+    <UserSecretsId>MeetingFlow.Monolith-kosher-check</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
