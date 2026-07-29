@@ -95,6 +95,18 @@ erDiagram
 
 `Pages/Admin/AuditLog` → loads all `AuditLogEntry` records ordered by date descending.
 
+### 8. Kosher Checker
+
+`Pages/KosherCheck` accepts 1–10 dish descriptions and sends the complete batch to the configured AI provider in one non-streaming request. The provider is required to return a JSON-schema-based structured result with one of these statuses for each dish:
+
+- `KOSHER`
+- `NOT_KOSHER`
+- `CONDITIONAL`
+- `INVALID_INPUT`
+
+The page keeps the last 20 successful checks in browser `localStorage`. No dish history is written to the server database.
+The endpoint allows 10 checks per minute per client address and no more than 4 concurrent AI calls in one application instance.
+
 ## Running
 
 ```bash
@@ -103,6 +115,28 @@ dotnet run
 ```
 
 The SQLite database (`meetingflow_monolith.db`) is created and seeded automatically on startup.
+
+The monolith starts without AI configuration, but the Kosher Checker will show an unavailable message until these environment variables are provided:
+
+```bash
+AiChat__Model=gpt-5-mini
+AiChat__Endpoint=https://api.openai.com/v1
+AiChat__ApiKey=your-api-key
+```
+
+The configured model and endpoint must support native JSON-schema structured output. The default uses OpenAI `gpt-5-mini`. Secrets must be supplied through environment variables or local secret storage and must not be committed.
+
+Run the server tests:
+
+```bash
+dotnet test ../MeetingFlow.Monolith.Tests/MeetingFlow.Monolith.Tests.csproj
+```
+
+Run the browser-logic tests:
+
+```bash
+node --test ../MeetingFlow.Monolith.Tests/Browser/kosher-check.test.mjs
+```
 
 ## What's Intentionally Wrong
 
