@@ -27,8 +27,8 @@
 
 ## Questions for review
 
-- The original AI engine uses an older GitHub Models endpoint. The monolith uses the
-  current `https://models.github.ai/inference` endpoint and `openai/gpt-4.1` model,
-  whose inference API accepts a JSON-schema response format.
+- The original AI engine uses an older GitHub Models endpoint. For local testing, the
+  monolith uses OpenAI `https://api.openai.com/v1` with `gpt-5-mini`, which supports
+  JSON-schema structured output and is suitable for this small classification task.
 - The lightweight abuse protection is process-local. A multi-instance deployment should
   use a shared gateway-level quota in addition to the per-instance controls.

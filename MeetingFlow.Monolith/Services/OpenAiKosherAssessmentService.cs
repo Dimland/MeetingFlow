@@ -67,7 +67,7 @@ public sealed class OpenAiKosherAssessmentService(
                 var response = await chatClient.GetResponseAsync<DishAssessmentBatch>(
                     messages,
                     SerializerOptions,
-                    options: new ChatOptions { Temperature = 0 },
+                    options: null,
                     useJsonSchemaResponseFormat: true,
                     cancellationToken);
 
