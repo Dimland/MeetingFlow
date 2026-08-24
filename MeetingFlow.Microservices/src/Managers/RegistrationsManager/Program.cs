@@ -177,3 +177,7 @@ app.MapPost("/feedback", async (SubmitFeedbackRequest request, DataAccessorClien
 });
 
 app.Run();
+
+// WebApplicationFactory uses this entry point to start the complete HTTP
+// component in the test process.
+public partial class Program { }
