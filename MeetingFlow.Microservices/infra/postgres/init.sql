@@ -1,6 +1,7 @@
 -- Four logical bounded-context schemas in the single shared Postgres container.
 -- DataAccessor owns: meetings, registrations, feedback.
 -- NotificationsAccessor owns: notifications.
+-- Tables are created by EF Core's EnsureCreated() at service startup.
 CREATE SCHEMA IF NOT EXISTS meetings;
 CREATE SCHEMA IF NOT EXISTS registrations;
 CREATE SCHEMA IF NOT EXISTS feedback;

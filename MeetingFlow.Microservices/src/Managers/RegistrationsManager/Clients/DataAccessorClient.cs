@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
-using RegistrationsManager.Models;
+using DataAccessor.Contracts;
+using System.Net;
 
 namespace RegistrationsManager.Clients;
 
@@ -8,28 +9,63 @@ public class DataAccessorClient
     readonly HttpClient _http;
     public DataAccessorClient(HttpClient http) => _http = http;
 
-    // Fetches the WHOLE Meeting graph (with InternalNotes, AdminOnlyCode, Sessions...)
-    // just to read venue capacity for the capacity check and inline pricing.
-    public async Task<Meeting?> GetMeetingAsync(Guid id)
-        => await _http.GetFromJsonAsync<Meeting>($"/data/meetings/{id}");
-
-    public async Task<List<Registration>> GetRegistrationsForMeetingAsync(Guid meetingId)
-        => await _http.GetFromJsonAsync<List<Registration>>($"/data/registrations/by-meeting/{meetingId}") ?? new();
-
-    public async Task<Registration?> CreateRegistrationAsync(Registration body)
+    public async Task<RegistrationMeetingContextDto?> GetRegistrationContextAsync(Guid id)
     {
-        var resp = await _http.PostAsJsonAsync("/data/registrations", body);
-        resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<Registration>();
+        var response = await _http.GetAsync($"/data/meetings/{id}/registration-context");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<RegistrationMeetingContextDto>();
     }
 
-    public async Task<Attendee?> GetAttendeeAsync(Guid id)
-        => await _http.GetFromJsonAsync<Attendee>($"/data/attendees/{id}");
+    public async Task<IReadOnlyList<RegistrationDto>> GetRegistrationsForMeetingAsync(Guid meetingId)
+        => await _http.GetFromJsonAsync<List<RegistrationDto>>(
+            $"/data/registrations/by-meeting/{meetingId}") ?? [];
 
-    public async Task<Feedback?> CreateFeedbackAsync(Feedback body)
+    public async Task<RegistrationDto> CreateRegistrationAsync(PersistRegistrationRequest body)
     {
-        var resp = await _http.PostAsJsonAsync("/data/feedback", body);
-        resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<Feedback>();
+        var response = await _http.PostAsJsonAsync("/data/registrations", body);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<RegistrationDto>()
+            ?? throw new InvalidOperationException("DataAccessor returned an empty body.");
+    }
+
+    public async Task<AttendeeContactDto?> GetAttendeeContactAsync(Guid id)
+    {
+        var response = await _http.GetAsync($"/data/attendees/{id}/contact");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<AttendeeContactDto>();
+    }
+
+    public async Task<AccessorResult<AttendeeDetailsDto>> CreateAttendeeAsync(
+        DataAccessor.Contracts.CreateAttendeeRequest request)
+    {
+        using var response = await _http.PostAsJsonAsync("/data/attendees", request);
+        return await AccessorResult<AttendeeDetailsDto>.FromResponseAsync(response);
+    }
+
+    public async Task<HttpStatusCode> DeleteAttendeeAsync(Guid id)
+    {
+        using var response = await _http.DeleteAsync($"/data/attendees/{id}");
+        return response.StatusCode;
+    }
+
+    public async Task<FeedbackDto> CreateFeedbackAsync(PersistFeedbackRequest body)
+    {
+        var response = await _http.PostAsJsonAsync("/data/feedback", body);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<FeedbackDto>()
+            ?? throw new InvalidOperationException("DataAccessor returned an empty body.");
+    }
+}
+
+public sealed record AccessorResult<T>(HttpStatusCode StatusCode, T? Value)
+{
+    public static async Task<AccessorResult<T>> FromResponseAsync(HttpResponseMessage response)
+    {
+        var value = response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<T>()
+            : default;
+        return new AccessorResult<T>(response.StatusCode, value);
     }
 }

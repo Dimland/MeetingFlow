@@ -1,10 +1,16 @@
-# MeetingFlow — DTO Architecture Teaching Baseline
+# MeetingFlow — Architecture Teaching Repository
 
 ## Purpose
 
-This repository intentionally uses **one model everywhere** — the same EF Core entity flows from the database through application logic, API endpoints, and UI pages. Students will study this codebase to understand **why exposing database/domain models directly through application boundaries is problematic**, and then refactor the projects into proper DTO/contract architectures.
+The repository contains several versions of the same domain for architecture and
+testing exercises. The monolith and client-server projects intentionally use
+database models across application boundaries. The microservices project is the
+refactored reference implementation with explicit HTTP contracts, public API
+models, mappings and a versioned integration event.
 
-> **This repository intentionally exposes EF Core/domain entities directly through UI and API boundaries. This is not recommended production architecture. It is a teaching baseline.**
+> The intentionally imperfect model exposure remains in
+> `MeetingFlow.Monolith` and `MeetingFlow.ClientServer`. It is not the design to
+> copy into production.
 
 ---
 
@@ -43,7 +49,8 @@ MeetingFlow/
     │   ├── Managers/                  # MeetingsManager, RegistrationsManager
     │   ├── Engines/                   # SchedulingEngine (pure logic)
     │   └── Accessors/                 # DataAccessor, NotificationsAccessor
-    └── tests/                         # xUnit integration tests (fail by design)
+    ├── src/Contracts/                 # Service-owned HTTP and event contracts
+    └── tests/                         # Testing lecture material
 ```
 
 ### MeetingFlow.Monolith
@@ -59,7 +66,15 @@ A client-server architecture with:
 
 ### MeetingFlow.Microservices
 
-An IDesign-style microservices system (one Gateway, two Managers, one Engine, two Resource Accessors) running on Docker Compose with Postgres. Each service redeclares its own near-duplicate copy of every entity, and the same shape flows from the database through every service to the public gateway response. No shared contracts library, no edge DTOs, no payload versioning.
+An IDesign-style microservices system running on Docker Compose with Postgres and
+RabbitMQ. EF Core entities remain inside their owning Resource Accessors.
+Services communicate through small provider-owned HTTP contracts, Managers map
+them into use-case models, and Gateway exposes separate public API models.
+Registration notifications use the versioned `registration.created.v1`
+integration event.
+
+See [MeetingFlow.Microservices/README.md](MeetingFlow.Microservices/README.md)
+for the service graph, contract ownership rules and main flows.
 
 ---
 
@@ -111,13 +126,9 @@ docker compose up --build
 
 The public gateway is available at [http://localhost:8080](http://localhost:8080). Postgres comes up first (with a healthcheck) and the six services start in dependency order. The schemas (`meetings`, `registrations`, `feedback`, `notifications`) are created via `infra/postgres/init.sql` and seeded automatically on first start.
 
-To run the integration tests against the live stack (from this directory):
-
-```bash
-dotnet test MeetingFlow.Microservices/tests/MeetingFlow.Microservices.IntegrationTests
-```
-
-All tests are expected to fail against the baseline — that's the teaching signal.
+The `MeetingFlow.Microservices/tests` directory is a clean starting point for
+the components and integration tests lecture. Exercise implementations are not
+included in the starter repository.
 
 ---
 

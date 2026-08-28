@@ -15,6 +15,7 @@ public class MeetingFlowDbContext : DbContext
     public DbSet<Registration> Registrations => Set<Registration>();
     public DbSet<Feedback> Feedback => Set<Feedback>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
+    public DbSet<MeetingTask> MeetingTasks => Set<MeetingTask>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,5 +51,11 @@ public class MeetingFlowDbContext : DbContext
         });
 
         modelBuilder.Entity<AuditLogEntry>(e => e.ToTable("audit_log", schema: "meetings"));
+
+        modelBuilder.Entity<MeetingTask>(e =>
+        {
+            e.ToTable("tasks", schema: "meetings");
+            e.HasOne(x => x.Meeting).WithMany().HasForeignKey(x => x.MeetingId);
+        });
     }
 }

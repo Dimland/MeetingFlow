@@ -18,6 +18,20 @@ services:
     networks:
       - meetingflow
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: meetingflow-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - meetingflow
+
   dataaccessor:
     build:
       context: .
@@ -42,10 +56,13 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:5011
       POSTGRES_CONN: Host=postgres;Port=5432;Database=meetingflow;Username=meetingflow;Password=meetingflow
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     ports:
       - "5011:5011"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - meetingflow
@@ -59,6 +76,25 @@ services:
       ASPNETCORE_URLS: http://+:5020
     ports:
       - "5020:5020"
+    networks:
+      - meetingflow
+
+  ai-chat-engine:
+    build:
+      context: .
+      dockerfile: src/Engines/AiChatEngine/Dockerfile
+    container_name: meetingflow-ai-chat-engine
+    environment:
+      ASPNETCORE_URLS: http://+:5040
+      ServiceUrls__DataAccessor: http://dataaccessor:5010
+      AiChat__Provider: ${AI_PROVIDER:-github}
+      AiChat__Model: ${AI_MODEL:-gpt-4o-mini}
+      AiChat__Endpoint: ${AI_ENDPOINT:-https://models.inference.ai.azure.com}
+      AiChat__ApiKey: ${GITHUB_TOKEN:-}
+    ports:
+      - "5040:5040"
+    depends_on:
+      - dataaccessor
     networks:
       - meetingflow
 
@@ -88,13 +124,13 @@ services:
       ASPNETCORE_URLS: http://+:5031
       DATA_ACCESSOR_URL: http://dataaccessor:5010
       SCHEDULING_ENGINE_URL: http://scheduling-engine:5020
-      NOTIFICATIONS_ACCESSOR_URL: http://notifications-accessor:5011
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     ports:
       - "5031:5031"
     depends_on:
       - dataaccessor
       - scheduling-engine
-      - notifications-accessor
+      - rabbitmq
     networks:
       - meetingflow
 
@@ -105,13 +141,27 @@ services:
     container_name: meetingflow-gateway
     environment:
       ASPNETCORE_URLS: http://+:8080
-      MEETINGS_MANAGER_URL: http://meetings-manager:5030
-      REGISTRATIONS_MANAGER_URL: http://registrations-manager:5031
+      ServiceUrls__MeetingsManager: http://meetings-manager:5030
+      ServiceUrls__RegistrationsManager: http://registrations-manager:5031
+      ServiceUrls__AiChatEngine: http://ai-chat-engine:5040
     ports:
       - "8080:8080"
     depends_on:
       - meetings-manager
       - registrations-manager
+      - ai-chat-engine
+    networks:
+      - meetingflow
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Web/Dockerfile
+    container_name: meetingflow-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
     networks:
       - meetingflow
 
