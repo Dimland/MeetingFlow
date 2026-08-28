@@ -9,7 +9,7 @@ dotnet --version
 dotnet restore .\MeetingFlow.Monolith\MeetingFlow.Monolith.csproj
 ```
 
-Запустите сервер и клиентскую часть Razor Pages одним процессом:
+Запустите одно монолитное приложение Razor Pages одним процессом:
 
 ```powershell
 dotnet run --project .\MeetingFlow.Monolith\MeetingFlow.Monolith.csproj
@@ -19,6 +19,6 @@ dotnet run --project .\MeetingFlow.Monolith\MeetingFlow.Monolith.csproj
 
 <http://localhost:5000/KosherCheck>
 
-Серверная и клиентская части Razor Pages стартуют вместе в приложении `MeetingFlow.Monolith`. Без настроенной модели страница всё равно откроется, но при проверке покажет сообщение о недоступности. Чтобы проверка выполнялась, настройте параметры модели согласно README монолита.
+Интерфейс Razor Pages обслуживается тем же процессом `MeetingFlow.Monolith`; отдельный клиентский процесс не запускается. Если отсутствует `AiChat__ApiKey`, страница откроется, но корректная отправленная проверка получит HTTP 503 и общее сообщение о недоступности. Имя модели и адрес имеют значения по умолчанию, но ключ API обязателен. Настройте его согласно README монолита.
 
 Для остановки процесса нажмите `Ctrl+C` в окне терминала.
